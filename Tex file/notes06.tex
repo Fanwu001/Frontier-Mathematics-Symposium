@@ -1,0 +1,294 @@
+\documentclass[12pt]{article}
+\usepackage[english]{babel}
+\usepackage{natbib}
+\usepackage{url}
+\usepackage[utf8x]{inputenc}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\graphicspath{{images/}}
+\usepackage{parskip}
+\usepackage{fancyhdr}
+\usepackage{vmargin}
+\usepackage{ctex}
+\usepackage[noend]{algpseudocode}
+\usepackage{algorithmicx,algorithm}
+\usepackage{pythonhighlight}
+\setlength{\parindent}{2em}
+\setmarginsrb{3 cm}{2.5 cm}{3 cm}{2.5 cm}{1 cm}{1.5 cm}{1 cm}{1.5 cm}
+\title{ 前沿数学专题讨论 PR06}								% Title
+\author{22-23秋冬}								% Author
+\date{21 Dec 2022}	% Date
+
+\makeatletter
+\let\thetitle\@title
+\let\theauthor\@author
+\let\thedate\@date
+\makeatother
+
+\pagestyle{fancy}
+\fancyhf{}
+\rhead{\theauthor}
+\lhead{\thetitle}
+\cfoot{\thepage}
+
+\begin{document}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{titlepage}
+	\centering
+    \vspace*{0.5 cm}
+    \includegraphics[scale = 0.5]{logo.jpeg}\\[1.0 cm]	% University Logo
+	% University Name
+	\textsc{\Large \textbf{浙江大学数学科学学院} }\\[0.5 cm]				% Course Code
+	\rule{\linewidth}{0.2 mm} \\[0.4 cm]
+	{ \huge \bfseries \thetitle}\\
+	\rule{\linewidth}{0.2 mm} \\[1.5 cm]
+	{  \bfseries \thedate}\\
+	\vskip 0.6 in
+	\begin{minipage}{0.4\textwidth}
+		\begin{flushleft} \large
+			\emph{Submitted To:}\\
+			张南松老师\\
+                22-23秋冬学期\\
+			\end{flushleft}
+			\end{minipage}~
+			\begin{minipage}{0.4\textwidth}
+            
+			\begin{flushright} \large
+			\emph{Submitted By :} \\
+			吴凡\\
+            农业工程+统计学\\
+		\end{flushright}
+        
+	\end{minipage}\\[2 cm]		    
+	
+\end{titlepage}
+
+\tableofcontents
+\pagebreak
+
+
+
+
+\section{前言}
+今天介绍的主题为强化学习中的一种actor critic的提升方式Deep Deterministic Policy Gradient (DDPG)算法，
+DDPG最大的优势就是能够在连续动作上更有效地学习。
+
+概括来说，RL要解决的问题是：让agent学习在一个环境中的如何行为动作(act)， 从而获得最大的奖励值总和(total reward)。
+这个奖励值一般与agent定义的任务目标关联。
+agent需要的主要学习内容：第一是行为策略(action policy)， 第二是规划(planning)。
+其中，行为策略的学习目标是最优策略， 也就是使用这样的策略，
+可以让agent在特定环境中的行为获得最大的奖励值，从而实现其任务目标。
+
+行为(action)可以简单分为：
+\begin{itemize}
+	\item 连续的：如赛 车游戏中的方向盘角度、油门、刹车控制信号，机器人的关节伺服电机控制信号。
+	\item 离散的：如围棋、贪吃蛇游戏。 Alpha Go就是一个典型的离散行为agent。
+\end{itemize}
+
+DDPG是针对连续行为的策略学习方法。在RL领域，DDPG主要从：PG -> DPG -> DDPG 发展而来。
+
+相关基本概念：
+\begin{enumerate}
+	\item $s_t$:在t时刻，agent观察到的环境状态，比如观察到的环境图像，agent在环境中的位置、速度、机器人关节角度等；
+	\item $a_t$:在t时刻，agent选择的行为（action），通过环境执行后，环境状态由$s_t$转换为$s_{t+1}$
+	\item $r(s_t,a_t)$函数：环境在状态$s_{t}$ 执行行为$a_t$后，返回的单步奖励值；
+	\item $R_t$:是从当前状态直到将来某个状态，期间所有行为所获得奖励值的加权总和，即discounted future reward
+	\item $\gamma$:discounted rate,通常取0.99.
+	\begin{align}
+		R_t=\sum_{i=t}^T\gamma^{i-t}r(s_i,a_i)
+	\end{align}
+	\begin{figure}[htbp]
+		\centering
+		\includegraphics[width=8cm]{01.png}
+	\end{figure}
+\end{enumerate}
+
+\subsection{PG}
+R.Sutton 在2000年提出的Policy Gradient 方法，是RL中，学习连续的行为控制策略
+的经典方法，其提出的解决方案是：
+通过一个概率分布函数 $ \pi_{\theta}(s_{t} | \theta^{\pi})$ 来表示每一步的最优策略，
+在每一步根据该概率分布进行action采样，获得当前的最佳action取值;即：
+\begin{align}
+	a_t \sim \pi_{\theta}(s_{t} | \theta^{\pi})
+\end{align}
+
+
+生成action的过程，本质上是一个随机过程；最后学习到的策略，也是一个随机策略(stochastic policy).
+
+
+\subsection{DPG}
+Deepmind的D.Silver等在2014年提出DPG： Deterministic Policy Gradient，
+ 即确定性的行为策略，每一步的行为通过函数$\mu$直接获得确定的值：
+ \begin{align}
+	a_t=\mu(s_t|\theta^\mu)
+ \end{align}
+
+ 这个函数$\mu$即最优行为策略，不再是一个需要采样的随机策略。
+
+ 为何需要确定性的策略？简单来说，PG方法有以下缺陷：
+ \begin{enumerate}
+	\item 即使通过PG学习得到了随机策略之后，在每一步行为时，我们还需要对得到的最优策略概率分布进行采样，才能获得action的具体值；而action通常是高维的向量，比如25维、50维，在高维的action空间的频繁采样，无疑是很耗费计算能力的；
+	\item 在PG的学习过程中，每一步计算policy gradient都需要在整个action space进行积分:
+	\begin{align}
+		\bigtriangledown _\theta=\int_S\int_A\rho(s)\pi_\theta(a|s)Q^\pi(s,a)dads
+	\end{align}
+	这个积分我们一般通过Monte Carlo 采样来进行估算，需要在高维的action空间进行采样，耗费计算能力。
+ \end{enumerate}
+
+
+\subsection{DDPG}
+
+Deepmind在2016年提出DDPG，全称是：Deep Deterministic Policy Gradient,
+是将深度学习神经网络融合进DPG的策略学习方法。
+相对于DPG的核心改进是： 采用卷积神经网络作为策略函数$\mu$和Q函数的模拟，
+即策略网络和Q网络；然后使用深度学习的方法来训练上述神经网络。
+
+Q函数的实现和训练方法，采用了Deepmind 2015年发表的DQN方法 ,
+即 Alpha Go使用的Q函数方法。
+
+
+\section{DDPG算法}
+\subsection{算法背景}
+
+DDPG算法它吸收了Actor-Critic让Policy gradient单步更新的精华，而且还吸收让计算机学会玩游戏的DQN的精华，合并成了一种新算法，叫做Deep Deterministic Policy Gradient. 那 DDPG 到底是什么样的算法呢, 我们就拆开来分析。我们将DDPG分成'Deep'和'Deterministic Policy Gradient'，然后'Deterministic Policy Gradient'又能细分为'Deterministic'和'Policy Gradient'，接下来我们就开始一个个分析。
+
+Deep顾名思义，就是走向更深层次，我们在DQN中提到过，我们使用一个经验池和两套结构相同，但参数更新频率不同的神经网络能有效促进学习。那我们也把这种思想运用到DDPG中，使DDPG也具备这种优良形式。但是DDPG的神经网络形式却比DQN的要复杂一点。
+
+\begin{figure}[htbp]
+	\centering
+	\includegraphics[width=8cm]{2.jpg}
+\end{figure}
+
+\begin{figure}[htbp]
+	\centering
+	\includegraphics[width=8cm]{03.jpg}
+\end{figure}
+
+Policy Gradient相比其他的强化学习方法，它能被用来在连续动作上进行动作的筛选。而且筛选的时候是根据所学习到的动作分布随机进行筛选，而Deterministic有点看不下去，Deterministic说：我说兄弟，你其实在做动作的时候没必要那么不确定，反正你最终都只是要输出一个动作值，干嘛要随机。所以Deterministic就改变了输出动作的过程，只在连续动作上输出一个动作值。
+\begin{figure}[htbp]
+	\centering
+	\includegraphics[width=8cm]{04.jpg}
+\end{figure}
+
+现在我们来说说DDPG中所用到的神经网络（粗略）。它其实和我们之前提到的Actor-Critic形式差不多，也需要有基于策略Policy的神经网络和基于价值Value的神经网络。但是为了体现DQN的思想，每种神经网络我们都需要再细分成两个，Policy Gradient这边，我们有估计网络和现实网络，估计网络用来输出实时的动作，供actor在现实中实行。而现实网络则是用来更新价值网络系统的。所以我们再来看看价值系统这边，我们也有现实网络和估计网络，他们都在输出这个状态的价值，而输入端却有不同，状态估计网络则是拿着当时Actor施加的动作当做输入。在实际运用中，DDPG这种做法确实带来了更有效的学习过程。
+
+\subsection{算法相关概念和定义}
+\begin{enumerate}
+	\item 确定性行为策略$\mu$：定义为一个函数，每一步的行为可以通过$s_t=\mu(s_t)$计算获得。
+	\item 策略网络：用一个卷积神经网络对$\mu$函数进行模拟拟合，这个网络我们就叫做策略网络，其参数为 $\theta^\mu$;
+	\item behavior policy$\beta$：在RL训练过程中，我们要兼顾两个e：exploration和exploit（也就是之前说过的探索和开发）；exploration的目的是探索潜在的更优策略，所以训练过程中，我们为action的决策机制引入随机噪声：将action的决策从确定性的过程变为一个随机过程，再从这个随机过程中采样得到action，下达给环境执行，过程如下图所示:
+	\begin{figure}[htbp]
+		\centering
+		\includegraphics[width=12cm]{05.jpg}
+	\end{figure}
+	上述这个策略叫做behavior策略，用$\beta$来表示，
+	这时RL的训练方式叫做off-policy。这里与$\epsilon-greedy$的思路是类似的。DDPG中，使用Uhlenbeck-Ornstein随机过程（下面简称UO过程），作为引入的随机噪声：
+	UO过程在时序上具备很好的相关性，可以使agent很好的探索具备动量属性的环境。
+    \item Q函数：即action-value函数，定义在状态$s_t$下，
+	采取动作$a_t$后，且如果持续执行策略$\mu$
+    的情况下，所获得的$R_t$期望值，用Bellman等式来定义：
+	\begin{align}
+		Q^\mu(s_t,a_t)=E[r(s_t,a_t)+\gamma Q^\mu(s_{t+1},\mu(s_{t+1}))]
+	\end{align}
+	可以看到，Q函数的定义是一个递归表达，在实际情况中，我们不可能每一步都递归计算Q的值，可行的方案是通过一个函数对Bellman等式表达进行模拟。
+	\item Q网络：DDPG中，我们用一个卷积神经网络对Q进行模拟，这个网络我们就叫做Q网络，其参数为$\theta^Q$，采用了DQN相同的方法。
+    \item  如何衡量一个策略$\mu$的表现：用一个函数J来衡量，我们叫做performance objective，针对off-policy学习的场景.
+    \item 训练的目标：最大化$J_\beta(\mu)$，同时最小化Q网络的Loss,$\mu=argmax_\mu J(\mu)$
+    \item 最优Q网络定义：具备最小化的Q网络Loss；训练Q网络的过程，就是寻找Q网络参数 
+的最优解的过程，我们使用SGD的方法。
+\end{enumerate}
+
+\subsection{DDPG实现框架和算法}
+以往的实践证明，如果只使用单个Q神经网络的算法，学习过程很不稳定，因为Q网络的参数在频繁梯度更新的同时，又用于计算Q网络和策略网络的gradient。基于此，DDPG分别为策略网络、Q网络各创建两个神经网络拷贝，一个叫做online，一个叫做target：
+\begin{figure}[htbp]
+	\centering
+	\includegraphics[width=7cm]{22.png}
+\end{figure}
+
+在训练完一个mini-batch的数据之后，通过SGA/SGD算法更新online网络的参数，然后通过soft update算法更新target网络的参数。soft update是一种running average的算法：
+\begin{figure}[htbp]
+	\centering
+	\includegraphics[width=6cm]{eq.png}
+\end{figure}
+\begin{itemize}
+	\item target网络参数变化小，用于在训练过程中计算online网络的gradient，比较稳定，训练易于收敛。
+	\item 参数变化小，学习过程变慢。
+\end{itemize}
+
+\subsubsection{算法流程}
+\begin{figure}[htbp]
+	\centering
+	\includegraphics[width=12cm]{33.jpg}
+\end{figure}
+
+\begin{enumerate}
+	\item actor根据behavior策略选择一个$a_t$，下达给gym执行该$a_t$。
+	behavior策略是一个根据当前online策略$\mu$和随机UO噪声生成的随机过程, 从这个随机 过程采样 获得$a_t$的值。
+	\begin{align}
+		a_t=\mu(s_t|\theta^\mu)+N_t
+	\end{align}
+	\item  gym执行$a_t$，返回reward $r_t$和新的状态$s_{t+1}$;
+	\item actor将这个状态转换过程(transition): $(s_t,a_t,r_t,s_{t+1})$存入replay memory buffer 中，作为训练online网络的数据集。
+	\item 从replay memory buffer R中，随机采样N个transition数据，
+	作为online策略网络、 online Q网络的一个mini-batch训练数据。我们用$(s_t,a_t,r_t,s_{t+1})$
+	表示mini-batch中的单个transition数据。
+	\item 计算online Q网络的 gradient：
+	\item update online Q:采用adam optimizer更新$\theta^Q$;
+	\item 计算策略网络的policy gradient;
+	\item update online策略网络：采用Adam optimizer更新$\theta^Q$;
+	\item soft update target网络$\mu'$和Q'
+\end{enumerate}
+
+\section{应用}
+得益于DDPG算法能够对连续性信息进行学习，因而其在机器人自主避障、农业机器人自主采摘等
+方面有着广阔的应用前景。现以COMPAG中“Collision-free path planning for a guava-harvesting robot based on 
+recurrent deep reinforcement learning”一文具体介绍DDPG算法的农业机器人领域的应用。
+
+\begin{figure}[htbp]
+	\centering
+	\includegraphics[width=12cm]{ro.png}
+	\caption{(a)机器人实图(b)机械手连路坐标系}
+\end{figure}
+
+\begin{enumerate}
+	\item 学习系统输入信息：植株图像
+	\begin{figure}[htbp]
+		\centering
+		\includegraphics[width=12cm]{ro2.png}
+		\caption{(a)原始图像(b)图像分割结果(c)图像3D建模}
+	\end{figure}
+	这一步是为了让机器人“看见”树枝和果实并作为输出信息，机器人需学习得到避开障碍物、成功抓取果实的最优路径。
+	\item 建立DDPG算法模型，伪代码如下：
+	\begin{figure}[htbp]
+		\centering
+		\includegraphics[width=12cm]{al1.png}
+	\end{figure}
+	\begin{figure}[htbp]
+		\centering
+		\includegraphics[width=12cm]{al2.png}
+	\end{figure}
+	\item 训练结果
+	\begin{figure}[htbp]
+		\centering
+		\includegraphics[width=10cm]{out1.png}
+	\end{figure}
+	\begin{figure}[htbp]
+		\centering
+		\includegraphics[width=10cm]{out2.png}
+	\end{figure}
+	\begin{figure}[htbp]
+		\centering
+		\includegraphics[width=12cm]{out4.png}
+		\caption{机器人使用循环DDPG作为现场路径规划器： (a)水果和障碍物定位；(b)无碰撞路径规划；(c)不与障碍物碰撞地接近目标.}
+	\end{figure}
+\end{enumerate}
+
+
+
+\bibliographystyle{plain}
+\bibliography{biblist}
+
+\end{document}
+

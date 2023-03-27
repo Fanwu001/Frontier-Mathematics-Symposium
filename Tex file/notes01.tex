@@ -1,0 +1,365 @@
+\documentclass[12pt]{article}
+\usepackage[english]{babel}
+\usepackage{natbib}
+\usepackage{url}
+\usepackage[utf8x]{inputenc}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\graphicspath{{images/}}
+\usepackage{parskip}
+\usepackage{fancyhdr}
+\usepackage{vmargin}
+\usepackage{ctex}
+\usepackage[noend]{algpseudocode}
+\usepackage{algorithmicx,algorithm}
+\usepackage{pythonhighlight}
+
+\setlength{\parindent}{2em}
+\setmarginsrb{3 cm}{2.5 cm}{3 cm}{2.5 cm}{1 cm}{1.5 cm}{1 cm}{1.5 cm}
+
+\title{ 前沿数学专题讨论 PR01}								% Title
+\author{22-23秋冬}								% Author
+\date{28 Sept 2022}	% Date
+
+\makeatletter
+\let\thetitle\@title
+\let\theauthor\@author
+\let\thedate\@date
+\makeatother
+
+\pagestyle{fancy}
+\fancyhf{}
+\rhead{\theauthor}
+\lhead{\thetitle}
+\cfoot{\thepage}
+
+\begin{document}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{titlepage}
+	\centering
+    \vspace*{0.5 cm}
+    \includegraphics[scale = 0.5]{logo.jpeg}\\[1.0 cm]	% University Logo
+	% University Name
+	\textsc{\Large \textbf{浙江大学数学科学学院} }\\[0.5 cm]				% Course Code
+	\rule{\linewidth}{0.2 mm} \\[0.4 cm]
+	{ \huge \bfseries \thetitle}\\
+	\rule{\linewidth}{0.2 mm} \\[1.5 cm]
+	{  \bfseries \thedate}\\
+	\vskip 0.6 in
+	\begin{minipage}{0.4\textwidth}
+		\begin{flushleft} \large
+			\emph{Submitted To:}\\
+			张南松老师\\
+                22-23秋冬学期\\
+			\end{flushleft}
+			\end{minipage}~
+			\begin{minipage}{0.4\textwidth}
+            
+			\begin{flushright} \large
+			\emph{Submitted By :} \\
+			吴凡\\
+            农业工程+统计学\\
+		\end{flushright}
+        
+	\end{minipage}\\[2 cm]		    
+	
+\end{titlepage}
+
+\tableofcontents
+\pagebreak
+
+
+\section{问题背景}
+小明看过以下6部电影,请你根据这6部电影的特点来推断小明
+是否喜欢看某部电影。\\
+	\begin{figure}[H]
+		\centering
+		\includegraphics[width=12cm]{01.png}
+	\end{figure}
+为建立决策树模型，引入2部小明没看过的电影作为对照。\\
+	\begin{figure}[H]
+		\centering
+		\includegraphics[width=12cm]{02.png}
+	\end{figure}
+决策树模型的任务：从给定的训练数据集学得一个模型对新示例
+进行分类。可看作对“当前示例属于这类吗?”这个问题的"决策"
+或"判定"过程。\\
+
+这个决策的过程通过决策树来完成。决策过程中提出的每个判定问题
+都是对某个属性的"测试"。
+\begin{figure}[htbp]
+	\centering
+	\includegraphics[width=8cm]{03.png}
+\end{figure}
+
+决策树学习的目的：产生一棵泛化能力强，即处理未见示例能力
+强的决策树。
+
+
+\newpage
+
+\section{基本算法}
+决策树模型基本流程遵循简单且直观的"分而治之"策略。
+
+算法流程如下：
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=14cm]{09.png}
+\end{figure}
+
+\section{ID3算法模型}
+一般而言，随着划分过程不断进行，
+我们希望决策树的分支结点所包含的样本尽可能属于同一类别，
+即结点的“纯度”(purity)越来越高.
+
+“信息熵”为度量样本集合纯度常用的一种指标，假定当前样本集合D
+中第k类样本所占的比例为$p_k(k=1,2,\cdots,|y|)$,则D的信息熵
+定义为
+\begin{align}
+	Ent(D)=-\sum_{k = 1}^{|y|}p_klog_2p_k  
+\end{align}
+
+Ent(D)的值越小，则D的纯度越高。
+
+假定离散属性a有V个可能的取值$\left\{a^1,a^2,\cdots,a^v \right\}$,
+若使用a来对样本集D进行划分，则会产生V个分支结点，其中第v
+个分支结点包含了D中所有在属性a上取值为$a^v$的样本，记为$D^v$，
+可计算出$Ent_a(D)$,
+于是可计算出用属性a对样本集D进行划分所获得的"信息增益"
+\begin{align}
+	Gain(D,a)=Ent(D)-Ent_a(D)=Ent(D)-\sum_{v = 1}^{V}\frac{|D^v|}{D}Ent(D^v) 
+\end{align}
+
+一般而言，信息增益越大，则意味着使用属性a来进行划分所获得的
+"纯度提升"越大，因此可选择属性$a_\ast =arg max_{a\in A} Gain(D,a)$
+
+举例：
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=12cm]{04.png}
+\end{figure}
+
+$Ent(D)=-(\frac{6}{8}*ln\frac{6}{8}+\frac{2}{8}*ln\frac{2}{8})=0.8112$
+
+$Ent_{类型}(D)=\frac{3}{8}*(-\frac{3}{3}*ln\frac{3}{3}-\frac{0}{3}*ln\frac{0}{3})
++\frac{2}{8}*(-\frac{1}{2}*ln\frac{1}{2}-\frac{1}{2}*ln\frac{1}{2})
++\frac{3}{8}*(-\frac{2}{3}*ln\frac{2}{3}-\frac{1}{3}*ln\frac{1}{3})=0.5944$
+
+因此，$Gain(D,类型)=Ent(D)-Ent_{类型}(D)=0.2168$
+
+同理可求得，$Ent_{产地}(D)=0.3444，Ent_{票房}(D)=0.6887$
+
+$Gain(D,产地)=Ent(D)-Ent_{产地}(D)=0.4668$
+
+$Gain(D,票房)=Ent(D)-Ent_{票房}(D)=0.1225$
+
+因此，Gain(D,产地)>Gain(D,类型)>Gain(D,票房)
+
+属性"产地"的信息增益最大，于是它被选为划分属性，随后，
+决策树学习算法对每个分支结点做进一步划分。
+
+\begin{figure}[htbp]
+	\centering
+	\includegraphics[width=12cm]{05.png}
+\end{figure}
+
+上述过程为决策树算法中最常用的算法模型——ID3算法模型。
+
+\section{C4.5 算法模型}
+
+按照信息增益准则，$Gain(D,a)=Ent(D)-\sum_{v = 1}^{V}\frac{|D^v|}{D}Ent(D^v)$,
+对可取值数目较多的属性有所偏好，如在“小明观影”的例子中，
+若把“序号”作为划分属性，
+此时，$Ent_{类型}(D)=6*\frac{1}{8}*(-\frac{1}{1}*ln\frac{1}{1})
++2*\frac{1}{8}*(-\frac{0}{1}*ln\frac{0}{1})=0$，则信息增益非常大，
+而，若模型以“序号”作为划分属性，显然，此时这些分支结点的纯度
+已达最大，然而，这样的决策树显然不具有泛化能力，无法对新样本进行有效预测
+
+C4.5 算法模型不直接使用信息增益，而是使用"增益率"(gain ratio)来选择最优
+划分属性。
+
+\begin{align}
+	Gain_ratio(D,a)=\frac{Gain(D,a)}{IV(a)}
+\end{align}
+其中，$IV(a)=-\sum_{v = 1}^{V} \frac{|D^v|}{|D|}log_2 \frac{|D^v|}{|D|}  $为属性a
+的"固有值"，属性a的可能取值数目越多，则IV(a)的值通常会越大。
+
+增益率准则对可取值数目较少的属性有所偏好，因此C4.5算法并不是
+直接选择增益率最大的候选划分属性，而是使用了一个启发式：
+先从候选划分属性中找出信息增益高于平均水平的属性，再从中选择
+增益率最高的。
+
+\section{CART 决策树模型}
+
+CART 决策树模型采用“基尼系数”(Gini index)来选择划分属性
+
+\begin{align}
+	Gini(D)=1-\sum_{k = 1}^{|y|}p_k^2  
+\end{align}
+
+直观来说，Gini(D)反映了从数据集D中随机抽取两个样本，其类别标记
+不一致的概率，Gini(D)越小，则数据集D的纯度越高。
+\begin{figure}[htbp]
+	\centering
+	\includegraphics[width=12cm]{06.png}
+\end{figure}
+
+属性a的基尼指数定义为：
+
+\begin{align}
+	Gini_index(D,a)=\sum_{v=1}^{V}\frac{|D^v|}{|D|}Gini(D^v)
+\end{align}
+
+\begin{figure}[htbp]
+	\centering
+	\includegraphics[width=12cm]{07.png}
+\end{figure}
+\begin{figure}[htbp]
+	\centering
+	\includegraphics[width=12cm]{08.png}
+\end{figure}
+
+于是，选择使得划分后基尼指数最小的属性作为最优划分属性，
+即$a_\ast =arg min Giniindex(D,a)$
+
+\section{决策树的剪枝}
+决策树生成算法递归地产生决策树，直到不能继续下去为止，
+这样产生的树往往会出现过拟合现象。
+产生过拟合的原因在于学习时过多地考虑如何提高对
+训练数据的正确分类，从而构建出过于复杂的决策树。
+解决这个问题的办法是对已生成的决策树进行简化。
+
+在决策树学习中将已生成的树进行简化的过程称为剪枝。
+具体是从已生成的树上裁掉一些子树或叶节点，并将其根节点
+或父节点作为新的叶节点，从而简化分类树模型。
+
+
+剪枝策略分为预剪枝（prepruning）和后剪枝(post-pruning)。
+
+预剪枝：在决策树生成过程中，对每个节点在划分前先进行估计，若当前节点的划分不能带来决策树泛化性能提升，则停止划分并将当前节点标记为叶节点。
+
+后剪枝：先从训练集中生成一棵完整的决策树，然后自底向上地对非叶节点进行考察，若将该节点对应的子树替换成叶节点能带来决策树泛化能力的提升，则将该子树替换成叶节点。
+
+
+\newpage
+
+\section{代码实例}
+使用银行营销数据集，这些数据共包括16个特征，输出标签有2个（“是”、“否”），即客户是否已订阅定期存款。我们将采用其中的三个特征“年龄”、“年平均余额”以及“该月与该客户最后一次联系的日期”
+对客户是否订阅定期存款来进行预测。
+
+\textbf{属性信息}\\
+\begin{itemize}
+	\item age 年龄（数字）
+	\item job 职务：职务类型（类别：“管理员”，“蓝领”，“企业家”，“女佣”，“管理”，“退休” ，“自雇”，“服务”，“学生”，“技术员”，“待业”，“未知”）
+	\item marital 婚姻：婚姻状况（类别：“已婚”，“离婚”，“单身”，“未知”）
+	\item education 教育（类别：“未知”, “中学”, “小学”, “高等教育”）
+	\item default 违约：信用违约吗？（类别：“否”，”是’）
+	\item balance 收支：年平均余额
+	\item housing 住房：有住房贷款吗？（分类：“否”，“是”）
+	\item loan 贷款：有个人贷款吗？（类别：“否”，“是”）
+\end{itemize}
+等等
+
+\textbf{输出类别信息}：客户是否已定阅？
+\begin{python}
+import pandas as pd
+
+bm = pd.read_csv('./bank/bank.txt',sep=';')
+
+
+X = bm[['age','balance','day']].values[:200,:]
+y = bm['y'].values[:200]
+
+bm.head()
+\end{python}
+
+\begin{figure}[htbp]
+	\centering
+	\includegraphics[width=12cm]{10.png}
+\end{figure}
+
+将数据集划为70$\%$作为训练集，30$\%$划分为测试集。
+\begin{python}
+from sklearn.model_selection import train_test_split
+
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.3, random_state=1, stratify=y)
+\end{python}
+
+使用scikit-learn训练一个决策树
+
+\begin{python}
+from sklearn.tree import DecisionTreeClassifier
+
+# 采用gini系数进行度量，树的最大深度设置为4
+tree = DecisionTreeClassifier(criterion='gini', 
+                              max_depth=4, 
+                              random_state=1)
+# 训练
+tree.fit(X_train, y_train)	
+\end{python}
+
+DecisionTreeClassifier()函数参数:
+
+\begin{python}
+class sklearn.tree.DecisionTreeClassifier(criterion=’gini’, splitter=’best’, max_depth=None, min_samples_split=2, min_samples_leaf=1, min_weight_fraction_leaf=0.0, max_features=None, random_state=None, max_leaf_nodes=None, min_impurity_decrease=0.0, min_impurity_split=None, class_weight=None, presort=False)
+\end{python}
+
+criterion:默认gini,即CART算法。
+
+max depth:决策树最大深度，默认值是'None'.一般数据比较少或者特征少的时候可以不用管这个值,如果模型样本数量多,特征也多时,推荐限制这个最大深度,具体取值取决于数据的分布。常用的可以取值10到100之间,常用来解决过拟合。
+
+random state:是用来设置决策树分枝中随机模式的参数,在高维度时sklearn决策树的特征随机性会很明显,低维度的数据(比如鸢尾花数据集),随机性几乎不会显现。高维数据下我们设置random state并配合splitter参数可以让模型稳定下来,保证同一数据集下是决策树结果可以多次复现,便于模型参数优化。
+
+
+计算模型准确率：
+
+\begin{python}
+from sklearn.metrics import accuracy_score
+y_train_pre = tree.predict(X_train)
+y_test_pre = tree.predict(X_test)
+print("training accuracy: %.3f"%accuracy_score(y_train_pre, y_train))
+print("testing accuracy: %.3f"%accuracy_score(y_test_pre, y_test))	
+\end{python}
+Output:\\
+training accuracy: 0.907\\
+testing accuracy: 0.817
+
+使用Graphviz库进行对决策树进行可视化：
+
+\begin{python}
+from pydotplus import graph_from_dot_data
+from sklearn.tree import export_graphviz
+
+# 生成.dot文件
+dot_data = export_graphviz(tree,
+                           filled=True, 
+                           rounded=True,
+                           class_names=['yes', 
+                                        'no',],
+                           feature_names=['年龄', 
+                                          '收支',
+                                          '联系日期'],
+                           out_file=None) 
+# export_graphviz(tree, out_file='tree.dot',feature_names=['age','balance','duration'])
+# 将.dot文件存为图像文件
+graph = graph_from_dot_data(dot_data) 
+# 将图像文件写入
+graph.write_png('tree.png')
+\end{python}
+
+\begin{figure}[htbp]
+	\centering
+	\includegraphics[width=12cm]{tree.png}
+\end{figure}
+
+
+
+
+\bibliographystyle{plain}
+\bibliography{biblist}
+
+\end{document}
+

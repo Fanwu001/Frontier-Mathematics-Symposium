@@ -1,0 +1,306 @@
+\documentclass[12pt]{article}
+\usepackage[english]{babel}
+\usepackage{natbib}
+\usepackage{url}
+\usepackage[utf8x]{inputenc}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\graphicspath{{images/}}
+\usepackage{parskip}
+\usepackage{fancyhdr}
+\usepackage{vmargin}
+\usepackage{ctex}
+\usepackage[noend]{algpseudocode}
+\usepackage{algorithmicx,algorithm}
+\usepackage{pythonhighlight}
+\setlength{\parindent}{2em}
+\setmarginsrb{3 cm}{2.5 cm}{3 cm}{2.5 cm}{1 cm}{1.5 cm}{1 cm}{1.5 cm}
+
+\title{ 前沿数学专题讨论 PR04}								% Title
+\author{22-23秋冬}								% Author
+\date{9 Nov 2022}	% Date
+
+\makeatletter
+\let\thetitle\@title
+\let\theauthor\@author
+\let\thedate\@date
+\makeatother
+
+\pagestyle{fancy}
+\fancyhf{}
+\rhead{\theauthor}
+\lhead{\thetitle}
+\cfoot{\thepage}
+
+\begin{document}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{titlepage}
+	\centering
+    \vspace*{0.5 cm}
+    \includegraphics[scale = 0.5]{logo.jpeg}\\[1.0 cm]	% University Logo
+	% University Name
+	\textsc{\Large \textbf{浙江大学数学科学学院} }\\[0.5 cm]				% Course Code
+	\rule{\linewidth}{0.2 mm} \\[0.4 cm]
+	{ \huge \bfseries \thetitle}\\
+	\rule{\linewidth}{0.2 mm} \\[1.5 cm]
+	{  \bfseries \thedate}\\
+	\vskip 0.6 in
+	\begin{minipage}{0.4\textwidth}
+		\begin{flushleft} \large
+			\emph{Submitted To:}\\
+			张南松老师\\
+                22-23秋冬学期\\
+			\end{flushleft}
+			\end{minipage}~
+			\begin{minipage}{0.4\textwidth}
+            
+			\begin{flushright} \large
+			\emph{Submitted By :} \\
+			吴凡\\
+            农业工程+统计学\\
+		\end{flushright}
+        
+	\end{minipage}\\[2 cm]		    
+	
+\end{titlepage}
+
+\tableofcontents
+\pagebreak
+
+
+\section{背景}
+\subsection{线性模型的最小二乘估计}
+考虑线性模型：
+\begin{align}
+	y=X\beta+\epsilon, E(\epsilon)=0, Cov(\epsilon)= \sigma^2I
+\end{align}
+的参数$\beta$和$\sigma^2$的估计问题，y为n*1观测向量，X为n*p的设计
+矩阵，$\beta$是p*1未知参数向量，$\epsilon$为随机误差，$\sigma^2$为误差的方差。
+
+传统回归分析估计向量$\beta$的基本方法为最小二乘法，其思想是使得误差向量
+$\epsilon=y-X\beta$尽可能的小,使
+\begin{align}
+	Q(\beta)=||\epsilon||^2=||y-X\beta||^2=(y-X\beta)'(y-X\beta)
+\end{align}
+达到最小，解得
+\begin{align}
+	\hat{\beta}=(X'X)^{-1}X'y
+\end{align}
+
+在传统的数据分析场景里，我们通常接触的数据大部分都是n>p，
+即样本数大与变量数。此时，若rank(X)=p,则X'X可逆，这时
+$\hat{\beta}$是$\beta$的无偏估计。
+
+
+考察参数估计量的统计性质是衡量估计量好坏的主要准则。
+一个用于考察总体的估计量，可以从六个方面考察其优劣性。
+\begin{figure}[htbp]
+	\centering
+	\includegraphics[width=10cm]{gjl.png}
+\end{figure}
+
+最小二乘估计有许多优良性质：线性、无偏性、最小方差性。
+
+著名的高斯-马尔可夫(Gauss-Markov)定理：在古典假设条件下，最小
+二乘估计是最佳线性无偏估计量。
+
+\begin{figure}[htbp]
+	\centering
+	\includegraphics[width=10cm]{ols.png}
+\end{figure}
+
+\subsection{岭估计的提出}
+
+随着大数据的兴起，数据采集能力的指数级提升，大量的数据集出现了
+变量数多余样本数的情况，即$p>n$。此时矩阵X出现多重共线性的情况，
+X'X不可逆，因而没法用传统的OLS（最小二乘估计）方法。
+
+为了解决这一问题，就有了岭回归（Ridge Regression）方法，
+简单来说，岭回归就是在前面最小化目标函数$Q(\beta)$ 
+的后面加了一个2-范数的平方：
+\begin{gather}
+	Q(\beta)=||y-X\beta||^2+\lambda||\beta||_2^2\\
+	\Leftrightarrow argmin||y-X\beta||^2 \quad s.t. \sum \beta_j^2\leq s
+\end{gather}
+
+上式求解可得到$\beta$的岭估计:
+\begin{align}
+	\hat{\beta}(\lambda)=(X'X+\lambda I)^{-1}X'y
+\end{align}
+
+从上面我们可以明显看到参数$\lambda$保证了
+$X'X+\lambda I$满秩、可逆，
+当然也由于其加入，此时的$\hat{\beta}(\lambda)$
+是一个有偏估计。
+
+岭估计有以下性质：
+\begin{enumerate}
+	\item 岭估计$\hat{\beta}(\lambda)$是$\beta$的有偏估计.
+	\item 岭估计$\hat{\beta}(\lambda)$是最小二乘估计$\hat{\beta}$的一个线性变换.
+	\item $\forall k>0$,若$||\hat{\beta}||\neq 0\Longrightarrow ||\hat{\beta}(\lambda)||<||\hat{\beta}||$,岭估计是一个压缩的有偏估计。
+	\item 存在$\lambda>0$，使得在均方误差意义下，岭估计优于最小二乘估计，即$MSE(\hat{\beta}(\lambda))<MSE(\hat{\beta})$
+\end{enumerate}
+
+关于$\lambda$的选择，
+有Horel-Kennard公式、岭迹法、交叉验证法......
+
+Horel-Kennard公式:
+\begin{figure}[htbp]
+	\centering
+	\includegraphics[width=14cm]{hk.png}
+\end{figure}
+
+\section{LASSO}
+
+LASSO全名least absolute shrinkage and seletion operator,最小收缩算子法。
+他最大的特点就是引入了惩罚项λ，这个参数可以对模型变量进一步筛选，使模型不至于过于复杂，从而提高其泛化能力。
+
+与岭回归类似，Lasso就是在目标函数$Q(\beta)$ 后面加了一个1-范数
+\begin{gather}
+	Q(\beta)=||y-X\beta||^2+\lambda||\beta||_1\\
+	\Leftrightarrow argmin||y-X\beta||^2 \quad s.t. \sum |\beta_j|\leq s
+\end{gather}
+
+三种估计量的比较：
+\begin{figure}[htbp]
+	\centering
+	\includegraphics[width=10cm]{3lr.png}
+\end{figure}
+
+关于LSAAO在岭估计之后提出，为什么加1-范数的LASSO没有加2-范数的岭回归早，
+可能的原因是1-范数作为绝对值之和不方便求导。
+
+\subsection{Lasso的优势}
+
+为什么至今Lasso仍长青不老？
+
+因为它可以解决现在高维数据一个普遍问题——稀疏性。
+高维数据即p>n的情况，
+现在随着数据采集能力的提高，变量（也叫特征）数采集的多，
+但是其中可能有很多特征是不重要的，系数很小，如果用岭回归，
+可能这个不重要的变量也给你估出来了，而且可能还不小，
+而用Lasso方法，就可以把这些不重要变量的系数压缩为0，
+既实现了较为准确的参数估计，也实现了变量选择（降维）。
+
+以Lasso始祖Tibshiran在其著作中举的p=2的情形为例：
+\begin{figure}[htbp]
+	\centering
+	\includegraphics[width=12cm]{la.png}
+\end{figure}
+
+图中青色部分表示两种方法的约束。
+
+从图中可以看出，Lasso方法与之相交的地方恰为$(0,\beta_2)$，
+而从图中也可以看出$\hat{\beta}$所处的位置本就是$\beta_2$ 
+大，$\beta_1$小，我们取Lasso的结果，意味着$\beta_1$的系数被压缩到了0。
+
+
+
+\subsection{Lasso最优解}
+Lasso因为其约束条件（也有叫损失函数的）不是连续可导的，
+因此常规的解法如梯度下降法、牛顿法、就没法用了。
+目前常用的方法有：坐标轴下降法与最小角回归法。
+
+坐标轴下降法:
+
+坐标轴下降法是一种迭代算法，与梯度下降法利用目标函数的导数来确定搜索方向不同，坐标轴下降法是在当前坐标轴上搜索函数最小值，不需要求目标函数的导数。
+
+以2维为例，设损失函数为凸函数 J(x,y)，在初始点固定$x_0$，
+找使得J(y)达到最小的$y_1$，然后固定$y_1$，找使得J(x)达到最小的$x_2$，
+这样一直迭代下去，
+因为J(x,y)是凸的，所以一定可以找到使得J(x,y)达到最小的点$(x_k,y_k)$。
+\begin{figure}[htbp]
+	\centering
+	\includegraphics[width=10cm]{zr.png}
+\end{figure}
+
+\subsection{ElasticNet模型}
+ElasticNet模型，弹性网络模型，是结合了lasso和ridge regression的模型。
+
+ElasticNet模型的目标函数$Q(\beta)$ 
+\begin{gather}
+	Q(\beta)=||y-X\beta||^2+\lambda[(1-\alpha)||\beta||_2^2/2+\alpha||\beta||_1]
+\end{gather}
+
+弹性网络惩罚由$\alpha$控制，当$\alpha=1$时为Lasso模型，当$\alpha=0$时为Ridge模型.
+
+弹性网络在很多特征互相联系的情况下是非常有用的。
+Lasso 很可能只随机考虑这些特征中的一个，而弹性网络更倾向于选择两个。 
+在实践中，Lasso 和 Ridge 之间权衡的一个优势是它允许在循环过程
+（Under rotate）中继承 Ridge 的稳定性。
+
+\section{算法实例}
+\subsection{使用R进行Ridge回归}
+
+使用的数据集为糖尿病病情数据集（diabetes.csv）。
+糖尿病病情数据集包含从442例糖尿病患者中获得的十个变量：年龄（AGE）、性别（SEX）、体重指数（BMI）、平均血压（BP）和六个血清测量值（S1-S6），
+以及一个我们感兴趣的因变量Y。得到的可视化相关系数如图1所示：
+
+\begin{figure}[htbp]
+	\centering
+	\includegraphics[width=12cm]{100.jpg}
+\end{figure}
+
+数据相关性分析结果表明，
+因变量Y和AGE、SEX、S1、S2四个变量的相关系数较小，和S3是负相关，与其余变量的相关系数较大，且都是正相关；S1和S2之间的正相关性较强，S3和S4的负相关性较强。
+
+在Ridge回归模型中，需要指定一个合适的参数lambda，
+该参数为施加在回归系数上的惩罚系数，
+不同的参数lambda可以得到不同的Ridge回归模型。
+glmnet包中的cv.glmnet()可以通过交叉验证的方式，来分析在不同的参数lambda下回归模型的效果。下面使用cv.glmnet()函数和训练数集分析模型参数的影响。
+
+通过建立Ridge回归，在不同的lambda下，变量合数、各个自变量回归系数的变化如下图所示：
+\begin{figure}[htbp]
+	\centering
+	\includegraphics[width=12cm]{101.jpg}
+\end{figure}
+
+\begin{figure}[htbp]
+	\centering
+	\includegraphics[width=12cm]{102.jpg}
+\end{figure}
+
+结果表明，不存在系数为0的自变量，这是因为Ridge模型不容易把变量的系数压缩到0，
+Ridge回归模型并没有自动进行变量选择的能力。
+为了验证Ridge回归模型的预测效果，可在测试集上进行预测，并计算出平均绝对值误差的大小。
+通过predict()函数得到测试集的预测值后，再使用Metrics包的mae()函数计算平均绝对值误差。通过将预测值进行逆标准化变换，与标准化前的因变量进行比较发现，Ridge回归模型的预测平均绝对值误差为45.99。
+
+\subsection{使用R进行Lasso回归}
+
+使用同样的数据集进行Lasso回归分析。
+
+使用cv.glmnet()函数，利用交叉验证的方式，分析不同的参数lambda下Lasso回归模型的效果。
+在得到交叉验证后的模型lasso model后,使用plot()函数可视化不同参数下的均方误差以及各个自变量的回归系数变化情况，结果下图所示。
+\begin{figure}[htbp]
+	\centering
+	\includegraphics[width=12cm]{103.jpg}
+\end{figure}
+
+\begin{figure}[htbp]
+	\centering
+	\includegraphics[width=12cm]{5.jpg}
+\end{figure}
+
+随着参数lambda值的增加，Lasso回归使用的自变量数目在减少，同时模型的预测误差在增大。
+从Lasso回归模型的系数可以发现，AGE、S2、S4三个自变量的回归系数等于0，说明模型将这3个对因变量影响不显著的特征剔除了。
+
+通过predict()函数得到测试集的预测值后，再使用Metrics包的mae()函数计算平均绝对值误差。通过将预测值进行逆标准化变换，与标准化前的因变量进行比较发现，Lasso回归模型的预测平均绝对值误差为46.22。
+结果发现，Lasso回归预测的误差比Ridge回归大了一点，这是因为Lasso回归使用了更少的自变量来建立回归模型。虽然误差稍微变大，但是Lasso使用更少的特征，使模型更稳定，降低了模型的复杂度。
+
+\subsection{ElasticNet模型}
+
+ElasticNet模型，弹性网络模型，是结合了lasso和ridge regression的模型。
+弹性网络惩罚由$\alpha$控制，当$\alpha=1$时为Lasso模型，当$\alpha=0$时为Ridge模型.
+
+\begin{figure}[htbp]
+	\centering
+	\includegraphics[width=14cm]{3h.png}
+\end{figure}
+
+\bibliographystyle{plain}
+\bibliography{biblist}
+
+\end{document}
+

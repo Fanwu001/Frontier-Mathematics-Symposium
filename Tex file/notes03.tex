@@ -1,0 +1,226 @@
+\documentclass[12pt]{article}
+\usepackage[english]{babel}
+\usepackage{natbib}
+\usepackage{url}
+\usepackage[utf8x]{inputenc}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\graphicspath{{images/}}
+\usepackage{parskip}
+\usepackage{fancyhdr}
+\usepackage{vmargin}
+\usepackage{ctex}
+\usepackage[noend]{algpseudocode}
+\usepackage{algorithmicx,algorithm}
+\usepackage{pythonhighlight}
+\setlength{\parindent}{2em}
+\setmarginsrb{3 cm}{2.5 cm}{3 cm}{2.5 cm}{1 cm}{1.5 cm}{1 cm}{1.5 cm}
+
+\title{ 前沿数学专题讨论 PR03}								% Title
+\author{22-23秋冬}								% Author
+\date{26 Oct 2022}	% Date
+
+\makeatletter
+\let\thetitle\@title
+\let\theauthor\@author
+\let\thedate\@date
+\makeatother
+
+\pagestyle{fancy}
+\fancyhf{}
+\rhead{\theauthor}
+\lhead{\thetitle}
+\cfoot{\thepage}
+
+\begin{document}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{titlepage}
+	\centering
+    \vspace*{0.5 cm}
+    \includegraphics[scale = 0.5]{logo.jpeg}\\[1.0 cm]	% University Logo
+	% University Name
+	\textsc{\Large \textbf{浙江大学数学科学学院} }\\[0.5 cm]				% Course Code
+	\rule{\linewidth}{0.2 mm} \\[0.4 cm]
+	{ \huge \bfseries \thetitle}\\
+	\rule{\linewidth}{0.2 mm} \\[1.5 cm]
+	{  \bfseries \thedate}\\
+	\vskip 0.6 in
+	\begin{minipage}{0.4\textwidth}
+		\begin{flushleft} \large
+			\emph{Submitted To:}\\
+			张南松老师\\
+                22-23秋冬学期\\
+			\end{flushleft}
+			\end{minipage}~
+			\begin{minipage}{0.4\textwidth}
+            
+			\begin{flushright} \large
+			\emph{Submitted By :} \\
+			吴凡\\
+            农业工程+统计学\\
+		\end{flushright}
+        
+	\end{minipage}\\[2 cm]		    
+	
+\end{titlepage}
+
+\tableofcontents
+\pagebreak
+
+
+\section{概述}
+\subsection{简介}
+EM，英文全称为 Expectation-Maximization Algorithm，
+中文名为最大期望算法，是在概率模型中寻找参数最大似然估计或者最大后验估计的算法，其中概率模型依赖于无法观测的隐性变量。
+
+最大期望算法经过两个步骤交替进行计算:
+\begin{enumerate}
+	\item 第一步是计算期望（E），利用对隐藏变量的现有估计值，计算其最大似然估计值；
+	\item 第二步是最大化（M），最大化在E步上求得的最大似然值来计算参数的值。M步上找到的参数估计值被用于下一个E步计算中，这个过程不断交替进行。
+\end{enumerate}
+
+\subsection{算法思想}
+假定你是一五星级酒店的厨师，现在需要把锅里的菜平均分配到两个碟子里。如果只有一个碟子乘菜那就什么都不用说了，但问题是有2个碟子，正因为根本无法估计一个碟子里应该乘多少菜，所以无法一次性把菜完全平均分配。
+
+解法：大厨先把锅里的菜一股脑倒进两个碟子里，然后看看哪个碟子里的菜多，就把这个碟子中的菜往另一个碟子中匀匀，之后重复多次匀匀的过程，直到两个碟子中菜的量大致一样。 上面的例子中，平均分配这个结果是“观测数据z”，为实现平均分配而给每个盘子分配多少菜是“待求参数θ”，分配菜的手感就是“概率分布”。
+
+EM算法的思想：
+\begin{enumerate}
+	\item 给θ自主规定个初值（既然我不知道想实现“两个碟子平均分配锅里的菜”的话每个碟子需要有多少菜，那我就先估计个值）；
+	\item 根据给定观测数据和当前的参数θ，求未观测数据z的条件概率分布的期望（在上一步中，已经根据手感将菜倒进了两个碟子，然后这一步根据“两个碟子里都有菜”和“当前两个碟子都有多少菜”来判断自己倒菜的手感）；
+	\item 上一步中z已经求出来了，于是根据极大似然估计求最优的θ’（手感已经有了，那就根据手感判断下盘子里应该有多少菜，然后把菜匀匀）；
+	\item 因为第二步和第三步的结果可能不是最优的，所以重复第二步和第三步，直到收敛（重复多次匀匀的过程，直到两个碟子中菜的量大致一样）。
+\end{enumerate}
+而上面的第二步被称作E步（求期望），第三步被称作M步（求极大化），从而不断的E、M。
+
+\begin{figure}[htbp]
+	\centering
+	\includegraphics[width=8cm]{0003.png}
+\end{figure}
+
+EM迭代优化的路径是直线式的，可以看到每一步都会向最优值前进一步，而且前进路线是平行于坐标轴的，因为每一步只优化一个变量。
+
+这犹如在x-y坐标系中找一个曲线的极值，然而曲线函数不能直接求导，因此什么梯度下降方法就不适用了。但固定一个变量后，另外一个可以通过求导得到，因此可以使用坐标上升法，一次固定一个变量，对另外的求极值，最后逐步逼近极值。对应到EM上，E步：固定θ，优化Q；M步：固定Q，优化θ；交替将极值推向最大。
+
+
+\subsection{EM和MLE}
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=12cm]{0001.png}
+\end{figure}
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=12cm]{0002.png}
+\end{figure}
+\begin{itemize}
+	\item MLE是在“模型已定，参数未知”的情况下根据给定观察序列（所有序列服从同一分布）估计模型参数的估计方法。模型参数的准确性，跟观察序列直接相关。
+	\item EM 算法就是含有隐变量的MLE。
+\end{itemize}
+
+
+\section{数学模型}
+假设现在有m个独立样本$x=(x_1,x_2,\cdots,x_m)$,模型参数为$\theta$
+\begin{equation}\nonumber
+	\theta_{MLE}=argmax_\theta log p(x|\theta)
+\end{equation}
+
+对于EM算法：
+\begin{equation}\nonumber
+	\theta^{(t+1)}=arg max _\theta E_{z|x,\theta^{(t)}}[log P(x,z|\theta)]
+\end{equation}
+
+EM算法的迭代过程为，$\theta_0,\theta^{(1)},\theta^{(1)},\cdots,\theta^{(n)}$至收敛
+
+下证：
+\begin{equation}\nonumber
+	P(x|\theta^{(t)})\leq P(x|\theta^{(t+1)})
+\end{equation}
+
+证明：
+\begin{gather}\nonumber
+	P(x|\theta)=\frac{P(x,z|\theta)}{P(z|x,\theta)}\\
+	\Rightarrow log P(x|\theta)=log P(x,z|\theta)-log P(z|x,\theta)\\
+	\int_{Z} P(z|x,\theta^{(t)}) log P(x|\theta) \,dz=log P(x|\theta)\int_{Z} P(z|x,\theta^{(t)}) \,dz=log P(x|\theta)\\
+    \int_{Z} P(z|x,\theta^{(t)}) [log P(x,z|\theta)-log P(z|x,\theta)] \,dz \\
+	=\int_{Z} P(z|x,\theta^{(t)}) log P(x,z|\theta) \,dz-\int_{Z} P(z|x,\theta^{(t)}) log P(z|x,\theta) \,dz
+\end{gather}
+
+令$Q(\theta,\theta^{(t)})=\int_{Z} P(z|x,\theta^{(t)}) log P(x,z|\theta) \,dz$
+
+令$H(\theta,\theta^{(t)})=\int_{Z} P(z|x,\theta^{(t)}) log P(z|x,\theta) \,dz$
+
+则
+\begin{gather}\nonumber
+	log P(x|\theta)=Q(\theta,\theta^{(t)})-H(\theta,\theta^{(t)})\\
+    log P(x|\theta^{(t)})=Q(\theta^{(t)},\theta^{(t)})-H(\theta^{(t)},\theta^{(t)})\\
+	log P(x|\theta^{(t+1)})=Q(\theta^{(t+1)},\theta^{(t)})-H(\theta^{(t+1)},\theta^{(t)})
+\end{gather}
+
+要证：
+\begin{equation}\nonumber
+	P(x|\theta^{(t)})\leq P(x|\theta^{(t+1)})
+\end{equation}
+
+等价于证：
+\begin{equation}\nonumber
+	log P(x|\theta^{(t)})\leq log P(x|\theta^{(t+1)})
+\end{equation}
+
+等价于证：
+\begin{gather}\nonumber
+	Q(\theta^{(t)},\theta^{(t)})\leq Q(\theta^{(t+1)},\theta^{(t)})\\
+	H(\theta^{(t)},\theta^{(t)})\geq H(\theta^{(t+1)},\theta^{(t)})
+\end{gather}
+
+\begin{gather}\nonumber
+	\theta^{(t+1)}=arg max_\theta Q(\theta,\theta^{(t)})\\
+	Q(\theta^{(t+1)},\theta^{(t)})\geq Q(\theta,\theta^{(t)})
+\end{gather}
+
+由$\theta$的任意性，知$Q(\theta^{(t+1)},\theta^{(t)})\geq Q(\theta^{(t)},\theta^{(t)})$
+
+由Jenson不等式：$E[log X]\leq log E[X]$
+
+\begin{align}\nonumber
+	&H(\theta^{(t+1)},\theta^{(t)})-H(\theta^{(t)},\theta^{(t)})\\
+	&=\int_{Z} P(z|x,\theta^{(t)}) log \frac{P(z|x,\theta^{(t+1)})}{P(z|x,\theta^{(t)})} \,dz\\
+	&=E[log \frac{P(z|x,\theta^{(t+1)})}{P(z|x,\theta^{(t)})}]\\
+	&\leq log E(\frac{P(z|x,\theta^{(t+1)})}{P(z|x,\theta^{(t)})})\\
+	&=log \int_{Z} P(z|x,\theta^{(t)}) \frac{P(z|x,\theta^{(t+1)})}{P(z|x,\theta^{(t)})} \,dz\\
+	&=log \int_{Z} P(z|x,\theta^{(t+1)})  \,dz\\
+	&=log 1=0
+\end{align}
+
+\section{EM的应用}
+
+\subsection{EM的优缺点}
+\begin{enumerate}
+	\item 优点：算法简单，稳定上升的步骤能非常可靠地找到“最优的收敛值”；
+	\item 缺点
+	\begin{enumerate}
+		\item EM算法的收敛速度，非常依赖初始值的设置，设置不当，计算时的代价是相当大的
+		\item 对于大规模数据和多维高斯分布，其总的迭代过程，计算量大，迭代速度易受影响
+		\item EM算法中的M-Step依然是采用求导函数的方法,所以它找到的是极值点,即局部最优解,而不一定是全局最优解。
+	\end{enumerate}
+\end{enumerate}
+
+\subsection{EM的应用}
+\begin{itemize}
+	\item K-means聚类
+	\item GMM(Gaussian Mixture Model, 高斯混合模型)
+	\item HMM(Hidden Markov Model, 隐马尔可夫模型)
+\end{itemize}
+% \begin{figure}[htbp]
+% 	\centering
+% 	\includegraphics[width=10cm]{tree.png}
+% \end{figure}
+
+\bibliographystyle{plain}
+\bibliography{biblist}
+
+\end{document}
+
